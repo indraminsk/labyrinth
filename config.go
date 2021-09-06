@@ -22,7 +22,7 @@ func conf() (cfg *Config) {
 	var (
 		err error
 
-		file *os.File
+		file    *os.File
 		decoder *yaml.Decoder
 	)
 
