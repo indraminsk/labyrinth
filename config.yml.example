@@ -4,3 +4,9 @@ db:
   user:
   pass:
   dbname:
+constraints:
+  dimension:
+    max:
+  point:
+    min:
+    max:

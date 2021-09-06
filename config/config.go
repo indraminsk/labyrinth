@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"fmt"
@@ -14,11 +14,22 @@ type DSNType struct {
 	Pass   string `yaml:"pass"`
 }
 
-type Config struct {
-	Database DSNType `yaml:"db"`
+type ConstraintsType struct{
+	Dimension struct{
+		Max int `yaml:"max"`
+	} `yaml:"dimension"`
+	Point struct{
+		Min int `yaml:"min"`
+		Max int `yaml:"max"`
+	} `yaml:"point"`
 }
 
-func conf() (cfg *Config) {
+type Config struct {
+	Database DSNType `yaml:"db"`
+	Constraints ConstraintsType `yaml:"constraints"`
+}
+
+func Conf() (cfg *Config) {
 	var (
 		err error
 

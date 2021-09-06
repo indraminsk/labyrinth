@@ -5,13 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-)
-
-const (
-	MaxDimension = 100
-
-	MinValue = 0
-	MaxValue = 4
+	"greenjade/config"
 )
 
 type LevelType struct {
@@ -23,14 +17,14 @@ type LevelType struct {
 	Data    [][]int
 }
 
-func (obj *LevelType) Validate() (status error) {
+func (obj *LevelType) Validate(constraints config.ConstraintsType) (status error) {
 	var (
 		lenLine int
 	)
 
 	// check single line length
-	if len(obj.Data) > MaxDimension {
-		return errors.New(fmt.Sprintf("max count of lines cannot be more than %d", MaxDimension))
+	if len(obj.Data) > constraints.Dimension.Max {
+		return errors.New(fmt.Sprintf("max count of lines cannot be more than %d", constraints.Dimension.Max))
 	}
 
 	// init level's length by length of first line
@@ -38,8 +32,8 @@ func (obj *LevelType) Validate() (status error) {
 
 	for row, line := range obj.Data {
 		// check single line length
-		if lenLine > MaxDimension {
-			return errors.New(fmt.Sprintf("max line's length cannot be more than %d, broken line %d", MaxDimension, row+1))
+		if lenLine > constraints.Dimension.Max {
+			return errors.New(fmt.Sprintf("max line's length cannot be more than %d, broken line %d", constraints.Dimension.Max, row+1))
 		}
 
 		// if length current line does not equal to previous line length, than validation failed
@@ -48,7 +42,7 @@ func (obj *LevelType) Validate() (status error) {
 		}
 
 		for column, value := range line {
-			if (value < MinValue) || (value > MaxValue) {
+			if (value < constraints.Point.Min) || (value > constraints.Point.Max) {
 				return errors.New(fmt.Sprintf("level must contains only [0..4] values, broken value %d in point [%d,%d]", value, row+1, column+1))
 			}
 		}

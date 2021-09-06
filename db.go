@@ -3,11 +3,12 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"greenjade/config"
 
 	_ "github.com/lib/pq"
 )
 
-func openDB(cfg DSNType) (db *sql.DB) {
+func openDB(cfg config.DSNType) (db *sql.DB) {
 	var (
 		err error
 

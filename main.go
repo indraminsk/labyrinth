@@ -5,12 +5,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"greenjade/config"
 	"greenjade/model"
 	"net/http"
 )
 
 type ServerType struct {
 	db *sql.DB
+	cfg *config.Config
 }
 
 func (server *ServerType) handler(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +51,7 @@ func (server *ServerType) handler(w http.ResponseWriter, r *http.Request) {
 
 	level.DB = server.db
 
-	status = level.Validate()
+	status = level.Validate(server.cfg.Constraints)
 	if status != nil {
 		fmt.Println("[error] level is not valid:", status.Error())
 		http.Error(w, status.Error(), http.StatusUnprocessableEntity)
@@ -87,7 +89,7 @@ func main() {
 		err error
 
 		port *int
-		cfg  *Config
+		cfg  *config.Config
 		db   *sql.DB
 
 		server ServerType
@@ -95,7 +97,7 @@ func main() {
 
 	fmt.Println("config build...")
 
-	cfg = conf()
+	cfg = config.Conf()
 	if cfg == nil {
 		return
 	}
@@ -114,7 +116,7 @@ func main() {
 		}
 	}()
 
-	server = ServerType{db: db}
+	server = ServerType{db: db, cfg: cfg}
 
 	fmt.Println("connect to db: done")
 	port = flag.Int("p", 9080, "service port")
