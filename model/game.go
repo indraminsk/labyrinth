@@ -7,11 +7,12 @@ import (
 )
 
 type GameType struct {
-	DB *sql.DB `json:"-"`
-	TX *sql.Tx `json:"-"`
+	DB      *sql.DB `json:"-"`
+	TX      *sql.Tx `json:"-"`
 	Creator string
 	Game    string
-	Levels  [][]int
+	Level   int64
+	Data    [][]int
 }
 
 func (obj *GameType) Store() (gameId int64) {
@@ -21,7 +22,7 @@ func (obj *GameType) Store() (gameId int64) {
 		tx *sql.Tx
 
 		creatorId int64
-		levels []byte
+		data    []byte
 	)
 
 	tx, err = obj.DB.Begin()
@@ -50,19 +51,19 @@ func (obj *GameType) Store() (gameId int64) {
 		return -1
 	}
 
-	if !obj.dropLevels(gameId) {
+	if !obj.dropLevels(gameId, obj.Level) {
 		fmt.Println("[error] can't drop levels")
 		return -1
 	}
 
-	levels, err = json.Marshal(obj.Levels)
+	data, err = json.Marshal(obj.Data)
 	if err != nil {
-		fmt.Println("[error] can't convert levels to json")
+		fmt.Println("[error] can't convert level's data to json")
 		return -1
 	}
 
-	if !obj.addLevels(gameId, levels) {
-		fmt.Println("[error] can't add levels")
+	if !obj.addLevels(gameId, obj.Level, data) {
+		fmt.Println("[error] can't add level")
 		return -1
 	}
 
@@ -231,14 +232,14 @@ func (obj *GameType) getGameId(creatorId int64, game string) (id int64) {
 	return 0
 }
 
-func (obj *GameType) dropLevels(gameId int64) bool {
+func (obj *GameType) dropLevels(gameId, level int64) bool {
 	var (
 		err error
 
 		stmt *sql.Stmt
 	)
 
-	stmt, err = obj.TX.Prepare("DELETE FROM levels WHERE (game_id = $1)")
+	stmt, err = obj.TX.Prepare("DELETE FROM levels WHERE (game_id = $1) and (level = $2)")
 	if err != nil {
 		fmt.Println("[error] drop levels prepare:", err)
 		return false
@@ -250,7 +251,7 @@ func (obj *GameType) dropLevels(gameId int64) bool {
 		}
 	}()
 
-	_, err = stmt.Exec(gameId)
+	_, err = stmt.Exec(gameId, level)
 	if err != nil {
 		fmt.Println("[error] drop levels execute:", err)
 		return false
@@ -259,14 +260,14 @@ func (obj *GameType) dropLevels(gameId int64) bool {
 	return true
 }
 
-func (obj *GameType) addLevels(gameId int64, levels []byte) bool {
+func (obj *GameType) addLevels(gameId, level int64, data []byte) bool {
 	var (
 		err error
 
 		stmt *sql.Stmt
 	)
 
-	stmt, err = obj.TX.Prepare("INSERT INTO levels (game_id, data) VALUES ($1, $2)")
+	stmt, err = obj.TX.Prepare("INSERT INTO levels (game_id, level, data) VALUES ($1, $2, $3)")
 	if err != nil {
 		fmt.Println("[error] add levels prepare:", err)
 		return false
@@ -278,7 +279,7 @@ func (obj *GameType) addLevels(gameId int64, levels []byte) bool {
 		}
 	}()
 
-	_, err = stmt.Exec(gameId, levels)
+	_, err = stmt.Exec(gameId, level, data)
 	if err != nil {
 		fmt.Println("[error] add levels execute:", err)
 		return false

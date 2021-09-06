@@ -49,7 +49,7 @@ func (server *ServerType) handler(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("user:", game.Creator)
 	fmt.Println("game:", game.Game)
-	fmt.Println("levels:", game.Levels)
+	fmt.Println("levels:", game.Data)
 
 	game.DB = server.db
 
