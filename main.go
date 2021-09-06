@@ -15,10 +15,10 @@ type ServerType struct {
 
 func (server *ServerType) handler(w http.ResponseWriter, r *http.Request) {
 	var (
-		err error
+		err, status error
 
 		decoder *json.Decoder
-		game    model.GameType
+		level   model.LevelType
 
 		resource int64
 	)
@@ -39,7 +39,7 @@ func (server *ServerType) handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	decoder = json.NewDecoder(r.Body)
-	err = decoder.Decode(&game)
+	err = decoder.Decode(&level)
 	if err != nil {
 		fmt.Println("[error] decode request params:", err)
 		http.Error(w, "error", http.StatusInternalServerError)
@@ -47,15 +47,24 @@ func (server *ServerType) handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println("user:", game.Creator)
-	fmt.Println("game:", game.Game)
-	fmt.Println("levels:", game.Data)
+	level.DB = server.db
 
-	game.DB = server.db
+	status = level.Validate()
+	if status != nil {
+		fmt.Println("[error] level is not valid:", status.Error())
+		http.Error(w, status.Error(), http.StatusUnprocessableEntity)
 
-	resource = game.Store()
+		return
+	}
+
+	fmt.Println("user:", level.Creator)
+	fmt.Println("game:", level.Game)
+	fmt.Println("level:", level.Level)
+	fmt.Println("data:", level.Data)
+
+	resource = level.Store()
 	if resource <= 0 {
-		fmt.Println("[error] storing game data failed")
+		fmt.Println("[error] storing level data failed")
 		http.Error(w, "error", http.StatusInternalServerError)
 
 		return
@@ -78,8 +87,8 @@ func main() {
 		err error
 
 		port *int
-		cfg *Config
-		db *sql.DB
+		cfg  *Config
+		db   *sql.DB
 
 		server ServerType
 	)

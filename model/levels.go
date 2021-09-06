@@ -3,10 +3,18 @@ package model
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 )
 
-type GameType struct {
+const (
+	MaxDimension = 100
+
+	MinValue = 0
+	MaxValue = 4
+)
+
+type LevelType struct {
 	DB      *sql.DB `json:"-"`
 	TX      *sql.Tx `json:"-"`
 	Creator string
@@ -15,14 +23,50 @@ type GameType struct {
 	Data    [][]int
 }
 
-func (obj *GameType) Store() (gameId int64) {
+func (obj *LevelType) Validate() (status error) {
+	var (
+		lenLine int
+	)
+
+	// check single line length
+	if len(obj.Data) > MaxDimension {
+		return errors.New(fmt.Sprintf("max count of lines cannot be more than %d", MaxDimension))
+	}
+
+	// init level's length by length of first line
+	lenLine = len(obj.Data[0])
+
+	for row, line := range obj.Data {
+		// check single line length
+		if lenLine > MaxDimension {
+			return errors.New(fmt.Sprintf("max line's length cannot be more than %d, broken line %d", MaxDimension, row+1))
+		}
+
+		// if length current line does not equal to previous line length, than validation failed
+		if lenLine != len(line) {
+			return errors.New(fmt.Sprintf("level must be rectangular, broken line is %d", row+1))
+		}
+
+		for column, value := range line {
+			if (value < MinValue) || (value > MaxValue) {
+				return errors.New(fmt.Sprintf("level must contains only [0..4] values, broken value %d in point [%d,%d]", value, row+1, column+1))
+			}
+		}
+
+		lenLine = len(line)
+	}
+
+	return status
+}
+
+func (obj *LevelType) Store() (levelId int64) {
 	var (
 		err error
 
 		tx *sql.Tx
 
-		creatorId int64
-		data    []byte
+		creatorId, gameId int64
+		data              []byte
 	)
 
 	tx, err = obj.DB.Begin()
@@ -62,7 +106,8 @@ func (obj *GameType) Store() (gameId int64) {
 		return -1
 	}
 
-	if !obj.addLevels(gameId, obj.Level, data) {
+	levelId = obj.addLevels(gameId, obj.Level, data)
+	if levelId < 1 {
 		fmt.Println("[error] can't add level")
 		return -1
 	}
@@ -73,10 +118,10 @@ func (obj *GameType) Store() (gameId int64) {
 		return -1
 	}
 
-	return gameId
+	return levelId
 }
 
-func (obj *GameType) addCreator(creator string) (id int64) {
+func (obj *LevelType) addCreator(creator string) (id int64) {
 	var (
 		err error
 
@@ -109,7 +154,7 @@ func (obj *GameType) addCreator(creator string) (id int64) {
 	return id
 }
 
-func (obj *GameType) getCreatorId(creator string) (id int64) {
+func (obj *LevelType) getCreatorId(creator string) (id int64) {
 	var (
 		err error
 
@@ -154,7 +199,7 @@ func (obj *GameType) getCreatorId(creator string) (id int64) {
 	return 0
 }
 
-func (obj *GameType) addGame(creatorId int64, game string) (id int64) {
+func (obj *LevelType) addGame(creatorId int64, game string) (id int64) {
 	var (
 		err error
 
@@ -187,7 +232,7 @@ func (obj *GameType) addGame(creatorId int64, game string) (id int64) {
 	return id
 }
 
-func (obj *GameType) getGameId(creatorId int64, game string) (id int64) {
+func (obj *LevelType) getGameId(creatorId int64, game string) (id int64) {
 	var (
 		err error
 
@@ -232,7 +277,7 @@ func (obj *GameType) getGameId(creatorId int64, game string) (id int64) {
 	return 0
 }
 
-func (obj *GameType) dropLevels(gameId, level int64) bool {
+func (obj *LevelType) dropLevels(gameId, level int64) bool {
 	var (
 		err error
 
@@ -260,7 +305,7 @@ func (obj *GameType) dropLevels(gameId, level int64) bool {
 	return true
 }
 
-func (obj *GameType) addLevels(gameId, level int64, data []byte) bool {
+func (obj *LevelType) addLevels(gameId, level int64, data []byte) (id int64) {
 	var (
 		err error
 
@@ -270,7 +315,7 @@ func (obj *GameType) addLevels(gameId, level int64, data []byte) bool {
 	stmt, err = obj.TX.Prepare("INSERT INTO levels (game_id, level, data) VALUES ($1, $2, $3)")
 	if err != nil {
 		fmt.Println("[error] add levels prepare:", err)
-		return false
+		return -1
 	}
 
 	defer func() {
@@ -282,8 +327,53 @@ func (obj *GameType) addLevels(gameId, level int64, data []byte) bool {
 	_, err = stmt.Exec(gameId, level, data)
 	if err != nil {
 		fmt.Println("[error] add levels execute:", err)
-		return false
+		return -1
 	}
 
-	return true
+	return obj.getLevelId(gameId, level)
+}
+
+func (obj *LevelType) getLevelId(gameId, level int64) (id int64) {
+	var (
+		err error
+
+		stmt *sql.Stmt
+		row  *sql.Rows
+	)
+
+	stmt, err = obj.TX.Prepare("SELECT id FROM levels WHERE (game_id = $1) and (level = $2)")
+	if err != nil {
+		fmt.Println("[error] get level id prepare:", err)
+		return -1
+	}
+
+	defer func() {
+		if err = stmt.Close(); err != nil {
+			fmt.Println("[error] get level id clear stmt memory:", err)
+		}
+	}()
+
+	row, err = stmt.Query(gameId, level)
+	if err != nil {
+		fmt.Println("[error] get level id query statement:", err)
+		return -1
+	}
+
+	defer func() {
+		if err = row.Close(); err != nil {
+			fmt.Println("[error] get level id clear row memory:", err)
+		}
+	}()
+
+	for row.Next() {
+		err = row.Scan(&id)
+		if err != nil {
+			fmt.Println("[error] get level id scan row:", err)
+			return -1
+		}
+
+		return id
+	}
+
+	return 0
 }
