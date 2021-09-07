@@ -97,7 +97,7 @@ func main() {
 
 	fmt.Println("config build...")
 
-	cfg = config.Conf()
+	cfg = config.Conf(config.DefaultPath)
 	if cfg == nil {
 		return
 	}

@@ -6,6 +6,10 @@ import (
 	"os"
 )
 
+const (
+	DefaultPath = ""
+)
+
 type DSNType struct {
 	Host   string `yaml:"host"`
 	Port   string `yaml:"port"`
@@ -29,7 +33,7 @@ type Config struct {
 	Constraints ConstraintsType `yaml:"constraints"`
 }
 
-func Conf() (cfg *Config) {
+func Conf(path string) (cfg *Config) {
 	var (
 		err error
 
@@ -37,7 +41,7 @@ func Conf() (cfg *Config) {
 		decoder *yaml.Decoder
 	)
 
-	file, err = os.Open("config.yml")
+	file, err = os.Open(path + "config.yml")
 	if err != nil {
 		fmt.Println("error [open config file]:", err)
 		return nil

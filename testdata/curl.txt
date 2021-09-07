@@ -1,0 +1,12 @@
+curl -d "@projects/go/src/greenjade/testdata/data_all_ok_1_1.json" -X POST "127.0.0.1:9080"
+curl -d "@projects/go/src/greenjade/testdata/data_all_ok_1_2.json" -X POST "127.0.0.1:9080"
+
+curl -d "@projects/go/src/greenjade/testdata/data_all_ok_2.json" -X POST "127.0.0.1:9080"
+
+curl -d "@projects/go/src/greenjade/testdata/data_point_value_less_than_min.json" -X POST "127.0.0.1:9080"
+curl -d "@projects/go/src/greenjade/testdata/data_point_value_greater_than_max.json" -X POST "127.0.0.1:9080"
+
+curl -d "@projects/go/src/greenjade/testdata/data_not_rectangle.json" -X POST "127.0.0.1:9080"
+
+curl -d "@projects/go/src/greenjade/testdata/data_too_many_x.json" -X POST "127.0.0.1:9080"
+curl -d "@projects/go/src/greenjade/testdata/data_too_many_y.json" -X POST "127.0.0.1:9080"
