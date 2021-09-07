@@ -71,7 +71,7 @@ func (obj *LevelType) Store() (levelId int64) {
 
 	defer func() {
 		if err = tx.Rollback(); err != nil && err != sql.ErrTxDone {
-			fmt.Println("[error] store commit transaction:", err)
+			fmt.Println("[error] store rollback transaction:", err)
 		}
 	}()
 
