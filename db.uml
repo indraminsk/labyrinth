@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Diagram>
+  <ID>DATABASE</ID>
+  <OriginalElement>6d7e6c68-d2b8-402d-be57-e85f348554c8.SCHEMA:greenjade.public</OriginalElement>
+  <nodes>
+    <node x="5.5" y="146.0">6d7e6c68-d2b8-402d-be57-e85f348554c8.TABLE:greenjade.public.games</node>
+    <node x="0.0" y="0.0">6d7e6c68-d2b8-402d-be57-e85f348554c8.TABLE:greenjade.public.creators</node>
+    <node x="17.5" y="314.0">6d7e6c68-d2b8-402d-be57-e85f348554c8.TABLE:greenjade.public.levels</node>
+  </nodes>
+  <notes />
+  <edges>
+    <edge source="6d7e6c68-d2b8-402d-be57-e85f348554c8.TABLE:greenjade.public.levels" target="6d7e6c68-d2b8-402d-be57-e85f348554c8.TABLE:greenjade.public.games">
+      <point x="0.0" y="-70.0" />
+      <point x="0.0" y="59.0" />
+    </edge>
+    <edge source="6d7e6c68-d2b8-402d-be57-e85f348554c8.TABLE:greenjade.public.games" target="6d7e6c68-d2b8-402d-be57-e85f348554c8.TABLE:greenjade.public.creators">
+      <point x="0.0" y="-59.0" />
+      <point x="0.0" y="48.0" />
+    </edge>
+  </edges>
+  <settings layout="Hierarchic Group" zoom="1.0" x="81.0" y="227.0" />
+  <SelectedNodes>
+    <node>6d7e6c68-d2b8-402d-be57-e85f348554c8.TABLE:greenjade.public.creators</node>
+  </SelectedNodes>
+  <Categories>
+    <Category>Key columns</Category>
+    <Category>Columns</Category>
+    <Category>Virtual foreign keys</Category>
+  </Categories>
+</Diagram>
+
