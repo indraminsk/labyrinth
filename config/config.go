@@ -1,3 +1,4 @@
+// package config release work with yaml config file
 package config
 
 import (
@@ -7,9 +8,10 @@ import (
 )
 
 const (
-	DefaultPath = ""
+	DefaultPath = "" // default prefix for path to real config file
 )
 
+// subtype for config, describing dsn parameters
 type DSNType struct {
 	Host   string `yaml:"host"`
 	Port   string `yaml:"port"`
@@ -18,22 +20,28 @@ type DSNType struct {
 	Pass   string `yaml:"pass"`
 }
 
-type ConstraintsType struct{
-	Dimension struct{
+// subtype for config, describing constraint parameters
+type ConstraintsType struct {
+	Dimension struct {
 		Max int `yaml:"max"`
 	} `yaml:"dimension"`
-	Point struct{
+	Point struct {
 		Min int `yaml:"min"`
 		Max int `yaml:"max"`
 	} `yaml:"point"`
 }
 
-type Config struct {
-	Database DSNType `yaml:"db"`
+// describing config structure
+type ConfType struct {
+	Database    DSNType         `yaml:"db"`
 	Constraints ConstraintsType `yaml:"constraints"`
 }
 
-func Conf(path string) (cfg *Config) {
+/*
+open yaml file, read and decode to config structure.
+return config instance
+*/
+func BuildConfig(path string) (cfg *ConfType) {
 	var (
 		err error
 
@@ -41,6 +49,7 @@ func Conf(path string) (cfg *Config) {
 		decoder *yaml.Decoder
 	)
 
+	// open config file
 	file, err = os.Open(path + "config.yml")
 	if err != nil {
 		fmt.Println("error [open config file]:", err)
@@ -54,6 +63,7 @@ func Conf(path string) (cfg *Config) {
 		}
 	}()
 
+	// decode opened file into config structure
 	decoder = yaml.NewDecoder(file)
 	err = decoder.Decode(&cfg)
 	if err != nil {

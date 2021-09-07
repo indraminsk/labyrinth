@@ -8,15 +8,21 @@ import (
 	"greenjade/config"
 )
 
+// structure describe input data about level and processed data
 type LevelType struct {
-	DB      *sql.DB `json:"-"`
-	TX      *sql.Tx `json:"-"`
-	Creator string
-	Game    string
-	Level   int64
-	Data    [][]int
+	DB        *sql.DB `json:"-"`
+	TX        *sql.Tx `json:"-"`
+	CreatorId int64 `json:"-"`
+	GameId    int64 `json:"-"`
+	JsonData  []byte `json:"-"`
+	Creator   string
+	Game      string
+	Level     int64
+	Data      [][]int
 }
 
+// apply to level data constraints. constraints specify in config file section Constraints.
+// return nil or error object
 func (obj *LevelType) Validate(constraints config.ConstraintsType) (status error) {
 	var (
 		lenLine int
@@ -41,28 +47,35 @@ func (obj *LevelType) Validate(constraints config.ConstraintsType) (status error
 			return errors.New(fmt.Sprintf("level must be rectangular, broken line is %d", row+1))
 		}
 
+		// in each column must be only valid integer marks
 		for column, value := range line {
 			if (value < constraints.Point.Min) || (value > constraints.Point.Max) {
 				return errors.New(fmt.Sprintf("level must contains only [0..4] values, broken value %d in point [%d,%d]", value, row+1, column+1))
 			}
 		}
 
+		// store length of current line to compare with the next line
 		lenLine = len(line)
 	}
 
 	return status
 }
 
+// all needed actions to store level: find or create creator and game, delete previous level data and store new data.
+// return id new db's record
 func (obj *LevelType) Store() (levelId int64) {
 	var (
 		err error
 
 		tx *sql.Tx
 
+		creator CreatorType
+		game    GameType
+
 		creatorId, gameId int64
-		data              []byte
 	)
 
+	// run transaction common for all storing stages
 	tx, err = obj.DB.Begin()
 	if err != nil {
 		fmt.Println("[error] store begin transaction:", err)
@@ -77,35 +90,47 @@ func (obj *LevelType) Store() (levelId int64) {
 
 	obj.TX = tx
 
-	creatorId = obj.addCreator(obj.Creator)
+	// init creator structure and create (if it needs) new entity
+	creator = CreatorType{TX: tx, Creator: obj.Creator}
+
+	creatorId = creator.addCreator()
 	if creatorId < 1 {
 		fmt.Println("[error] can't create new creator")
 		return -1
 	}
 
-	gameId = obj.addGame(creatorId, obj.Game)
+	// init game structure and create (if it needs) new entity
+	game = GameType{TX: tx, CreatorId: creatorId, Game: obj.Game}
+
+	gameId = game.addGame()
 	if gameId < 1 {
 		fmt.Println("[error] can't create new game")
 		return -1
 	}
 
-	if !obj.dropLevels(gameId, obj.Level) {
+	// add creator and game id to level structure, drop previous level data
+	obj.CreatorId = creatorId
+	obj.GameId = gameId
+
+	if !obj.dropLevels() {
 		fmt.Println("[error] can't drop levels")
 		return -1
 	}
 
-	data, err = json.Marshal(obj.Data)
+	// before storing convert to json level data and add it
+	obj.JsonData, err = json.Marshal(obj.Data)
 	if err != nil {
 		fmt.Println("[error] can't convert level's data to json")
 		return -1
 	}
 
-	levelId = obj.addLevels(gameId, obj.Level, data)
+	levelId = obj.addLevels()
 	if levelId < 1 {
 		fmt.Println("[error] can't add level")
 		return -1
 	}
 
+	// commit common transaction
 	err = tx.Commit()
 	if err != nil {
 		fmt.Println("[error] store commit transaction:", err)
@@ -115,163 +140,8 @@ func (obj *LevelType) Store() (levelId int64) {
 	return levelId
 }
 
-func (obj *LevelType) addCreator(creator string) (id int64) {
-	var (
-		err error
-
-		stmt *sql.Stmt
-	)
-
-	id = obj.getCreatorId(creator)
-	if id < 1 {
-		stmt, err = obj.TX.Prepare("INSERT INTO creators (creator) VALUES ($1)")
-		if err != nil {
-			fmt.Println("[error] add new creator prepare:", err)
-			return -1
-		}
-
-		defer func() {
-			if err = stmt.Close(); err != nil {
-				fmt.Println("[error] add new creator clear stmt memory:", err)
-			}
-		}()
-
-		_, err = stmt.Exec(creator)
-		if err != nil {
-			fmt.Println("[error] add new creator:", err)
-			return -1
-		}
-
-		id = obj.getCreatorId(creator)
-	}
-
-	return id
-}
-
-func (obj *LevelType) getCreatorId(creator string) (id int64) {
-	var (
-		err error
-
-		stmt *sql.Stmt
-		row  *sql.Rows
-	)
-
-	stmt, err = obj.TX.Prepare("SELECT id FROM creators WHERE (creator = $1)")
-	if err != nil {
-		fmt.Println("[error] get creator id prepare:", err)
-		return -1
-	}
-
-	defer func() {
-		if err = stmt.Close(); err != nil {
-			fmt.Println("[error] get creator id clear stmt memory:", err)
-		}
-	}()
-
-	row, err = stmt.Query(creator)
-	if err != nil {
-		fmt.Println("[error] get creator id query statement:", err)
-		return -1
-	}
-
-	defer func() {
-		if err = row.Close(); err != nil {
-			fmt.Println("[error] get creator id clear row memory:", err)
-		}
-	}()
-
-	for row.Next() {
-		err = row.Scan(&id)
-		if err != nil {
-			fmt.Println("[error] get creator id scan row:", err)
-			return -1
-		}
-
-		return id
-	}
-
-	return 0
-}
-
-func (obj *LevelType) addGame(creatorId int64, game string) (id int64) {
-	var (
-		err error
-
-		stmt *sql.Stmt
-	)
-
-	id = obj.getGameId(creatorId, game)
-	if id < 1 {
-		stmt, err = obj.TX.Prepare("INSERT INTO games (creator_id, game) VALUES ($1, $2)")
-		if err != nil {
-			fmt.Println("[error] add new game prepare:", err)
-			return -1
-		}
-
-		defer func() {
-			if err = stmt.Close(); err != nil {
-				fmt.Println("[error] add new game clear stmt memory:", err)
-			}
-		}()
-
-		_, err = stmt.Exec(creatorId, game)
-		if err != nil {
-			fmt.Println("[error] add new game execute:", err)
-			return -1
-		}
-
-		id = obj.getGameId(creatorId, game)
-	}
-
-	return id
-}
-
-func (obj *LevelType) getGameId(creatorId int64, game string) (id int64) {
-	var (
-		err error
-
-		stmt *sql.Stmt
-		row  *sql.Rows
-	)
-
-	stmt, err = obj.TX.Prepare("SELECT id FROM games WHERE (creator_id = $1) and (game = $2)")
-	if err != nil {
-		fmt.Println("[error] get game id prepare:", err)
-		return -1
-	}
-
-	defer func() {
-		if err = stmt.Close(); err != nil {
-			fmt.Println("[error] get game id clear stmt memory:", err)
-		}
-	}()
-
-	row, err = stmt.Query(creatorId, game)
-	if err != nil {
-		fmt.Println("[error] get game id query statement:", err)
-		return -1
-	}
-
-	defer func() {
-		if err = row.Close(); err != nil {
-			fmt.Println("[error] get game id clear row memory:", err)
-		}
-	}()
-
-	for row.Next() {
-		err = row.Scan(&id)
-		if err != nil {
-			fmt.Println("[error] get game id scan row:", err)
-			return -1
-		}
-
-		return id
-	}
-
-	return 0
-}
-
-func (obj *LevelType) dropLevels(gameId, level int64) bool {
+// drop previous level data. prepare sql statement and execute it.
+func (obj *LevelType) dropLevels() bool {
 	var (
 		err error
 
@@ -290,7 +160,7 @@ func (obj *LevelType) dropLevels(gameId, level int64) bool {
 		}
 	}()
 
-	_, err = stmt.Exec(gameId, level)
+	_, err = stmt.Exec(obj.GameId, obj.Level)
 	if err != nil {
 		fmt.Println("[error] drop levels execute:", err)
 		return false
@@ -299,7 +169,9 @@ func (obj *LevelType) dropLevels(gameId, level int64) bool {
 	return true
 }
 
-func (obj *LevelType) addLevels(gameId, level int64, data []byte) (id int64) {
+// add actual level data. prepare sql statement and execute it.
+// return id for record with new data in db
+func (obj *LevelType) addLevels() (id int64) {
 	var (
 		err error
 
@@ -318,16 +190,18 @@ func (obj *LevelType) addLevels(gameId, level int64, data []byte) (id int64) {
 		}
 	}()
 
-	_, err = stmt.Exec(gameId, level, data)
+	_, err = stmt.Exec(obj.GameId, obj.Level, obj.JsonData)
 	if err != nil {
 		fmt.Println("[error] add levels execute:", err)
 		return -1
 	}
 
-	return obj.getLevelId(gameId, level)
+	return obj.getLevelId()
 }
 
-func (obj *LevelType) getLevelId(gameId, level int64) (id int64) {
+// prepare sql statement and execute it.
+// return id for specific game and level
+func (obj *LevelType) getLevelId() (id int64) {
 	var (
 		err error
 
@@ -347,7 +221,7 @@ func (obj *LevelType) getLevelId(gameId, level int64) (id int64) {
 		}
 	}()
 
-	row, err = stmt.Query(gameId, level)
+	row, err = stmt.Query(obj.GameId, obj.Level)
 	if err != nil {
 		fmt.Println("[error] get level id query statement:", err)
 		return -1

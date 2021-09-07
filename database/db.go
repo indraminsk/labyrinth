@@ -1,4 +1,5 @@
-package main
+// package database set connection to db
+package database
 
 import (
 	"database/sql"
@@ -8,7 +9,9 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func openDB(cfg config.DSNType) (db *sql.DB) {
+// build dsn string, open connection to db and check connection by command Ping.
+// return db instance
+func OpenDB(cfg config.DSNType) (db *sql.DB) {
 	var (
 		err error
 

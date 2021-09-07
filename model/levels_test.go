@@ -12,8 +12,8 @@ import (
 
 func fetchJsonData(t *testing.T, pathToJson string) (level LevelType, status error) {
 	var (
-		err error
-		jsonFile   *os.File
+		err      error
+		jsonFile *os.File
 		jsonData []byte
 	)
 
@@ -38,7 +38,6 @@ func fetchJsonData(t *testing.T, pathToJson string) (level LevelType, status err
 		return level, errors.New("[error] unmarshal json data")
 	}
 
-
 	return level, status
 }
 
@@ -46,11 +45,11 @@ func TestValidateDataAllOk(t *testing.T) {
 	var (
 		err, status error
 
-		cfg *config.Config
+		cfg   *config.ConfType
 		level LevelType
 	)
 
-	cfg = config.Conf("../")
+	cfg = config.BuildConfig("../")
 
 	level, err = fetchJsonData(t, "../testdata/data_all_ok_2.json")
 	if err != nil {
@@ -68,11 +67,11 @@ func TestValidateDataPointValueLessThanMin(t *testing.T) {
 	var (
 		err, status error
 
-		cfg *config.Config
+		cfg   *config.ConfType
 		level LevelType
 	)
 
-	cfg = config.Conf("../")
+	cfg = config.BuildConfig("../")
 
 	level, err = fetchJsonData(t, "../testdata/data_point_value_less_than_min.json")
 	if err != nil {
@@ -90,11 +89,11 @@ func TestValidateDataPointValueGreaterThanMax(t *testing.T) {
 	var (
 		err, status error
 
-		cfg *config.Config
+		cfg   *config.ConfType
 		level LevelType
 	)
 
-	cfg = config.Conf("../")
+	cfg = config.BuildConfig("../")
 
 	level, err = fetchJsonData(t, "../testdata/data_point_value_greater_than_max.json")
 	if err != nil {
@@ -112,11 +111,11 @@ func TestValidateDataNotRectangle(t *testing.T) {
 	var (
 		err, status error
 
-		cfg *config.Config
+		cfg   *config.ConfType
 		level LevelType
 	)
 
-	cfg = config.Conf("../")
+	cfg = config.BuildConfig("../")
 
 	level, err = fetchJsonData(t, "../testdata/data_not_rectangle.json")
 	if err != nil {
@@ -134,11 +133,11 @@ func TestValidateDataTooManyX(t *testing.T) {
 	var (
 		err, status error
 
-		cfg *config.Config
+		cfg   *config.ConfType
 		level LevelType
 	)
 
-	cfg = config.Conf("../")
+	cfg = config.BuildConfig("../")
 
 	level, err = fetchJsonData(t, "../testdata/data_too_many_x.json")
 	if err != nil {
@@ -156,11 +155,11 @@ func TestValidateDataTooManyY(t *testing.T) {
 	var (
 		err, status error
 
-		cfg *config.Config
+		cfg   *config.ConfType
 		level LevelType
 	)
 
-	cfg = config.Conf("../")
+	cfg = config.BuildConfig("../")
 
 	level, err = fetchJsonData(t, "../testdata/data_too_many_y.json")
 	if err != nil {
