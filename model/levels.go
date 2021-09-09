@@ -12,9 +12,9 @@ import (
 type LevelType struct {
 	DB        *sql.DB `json:"-"`
 	TX        *sql.Tx `json:"-"`
-	CreatorId int64 `json:"-"`
-	GameId    int64 `json:"-"`
-	JsonData  []byte `json:"-"`
+	CreatorId int64   `json:"-"`
+	GameId    int64   `json:"-"`
+	JsonData  []byte  `json:"-"`
 	Creator   string
 	Game      string
 	Level     int64
