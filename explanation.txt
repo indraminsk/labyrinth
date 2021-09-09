@@ -34,7 +34,7 @@ url:
 Minimum Survivable Path is standard question about labyrinth. I tried use simple library to find out answer for this
 question. I only needed add some function to prepare input data to use this library.
 
-method that I used is O(E+V) time complexity. where E is count of edges, and V is count of vertices.
+method (Breadth first search) that I used is O(E+V) time complexity. where E is count of edges, and V is count of vertices.
 
 general idea is get input level data, parse data into vertices and using graph theory find all possible ways, and choose
 the way with the lowest length. to calculate cost for concrete vertex we use cost for vertex where we went.
