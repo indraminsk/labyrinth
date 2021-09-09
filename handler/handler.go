@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"greenjade/analyze"
 	"greenjade/config"
 	"greenjade/model"
 	"net/http"
@@ -87,6 +88,63 @@ func (server *ServerType) Handler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 
 	_, err = w.Write([]byte(fmt.Sprintf("%d", resource)))
+	if err != nil {
+		fmt.Println("[error] build success response:", err)
+		http.Error(w, "error", http.StatusInternalServerError)
+		return
+	}
+}
+
+// filtering request type, decoding request body, calculate minimal survivable path (MSP).
+// build response with MSP value.
+func (server *ServerType) HandlerMSP(w http.ResponseWriter, r *http.Request) {
+	var (
+		err error
+
+		decoder *json.Decoder
+		level   model.LevelType
+
+		mspLength int
+	)
+
+	fmt.Println()
+
+	// we wait only POST request
+	if r.Method == http.MethodGet {
+		w.WriteHeader(http.StatusOK)
+
+		_, err = w.Write([]byte("I'm ready to POST only"))
+		if err != nil {
+			fmt.Println("[error] processing wrong request type:", err)
+			http.Error(w, "error", http.StatusInternalServerError)
+			return
+		}
+
+		return
+	}
+
+	// convert request body to level structure
+	decoder = json.NewDecoder(r.Body)
+	err = decoder.Decode(&level)
+	if err != nil {
+		fmt.Println("[error] decode request params:", err)
+		http.Error(w, "error", http.StatusInternalServerError)
+
+		return
+	}
+
+	fmt.Println("user:", level.Creator)
+	fmt.Println("game:", level.Game)
+	fmt.Println("level:", level.Level)
+
+	// calculating minimal survivable path
+	mspLength = analyze.MinSurvivablePathLen(level.Data)
+	fmt.Println("msp length:", mspLength)
+
+	// prepare response
+	w.WriteHeader(http.StatusCreated)
+
+	_, err = w.Write([]byte(fmt.Sprintf("%d", mspLength)))
 	if err != nil {
 		fmt.Println("[error] build success response:", err)
 		http.Error(w, "error", http.StatusInternalServerError)

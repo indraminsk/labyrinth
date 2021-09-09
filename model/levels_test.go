@@ -51,7 +51,7 @@ func TestValidateDataAllOk(t *testing.T) {
 
 	cfg = config.BuildConfig("../")
 
-	level, err = fetchJsonData(t, "../testdata/data_all_ok_2.json")
+	level, err = fetchJsonData(t, "../testdata/data_all_ok_2_msp_12.json")
 	if err != nil {
 		t.Error(err.Error())
 		t.FailNow()

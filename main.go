@@ -53,6 +53,7 @@ func main() {
 	fmt.Println("to stop the service, press [Ctrl+C]")
 
 	http.HandleFunc("/", server.Handler)
+	http.HandleFunc("/msp", server.HandlerMSP)
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 	if err != nil {
