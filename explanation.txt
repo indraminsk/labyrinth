@@ -1,0 +1,40 @@
+Part 1:  Creating Levels
+url:
+    // adding game with two levels by help two requests
+    curl -d "@testdata/data_all_ok_1_1.json" -X POST "127.0.0.1:9080"
+    curl -d "@testdata/data_all_ok_1_2.json" -X POST "127.0.0.1:9080"
+
+    // adding game with one level
+    curl -d "@testdata/data_all_ok_2_msp_12.json" -X POST "127.0.0.1:9080"
+
+to resolve this part I chose standard http server. to do code readable and flexible I use separate modules for db
+connection ("db") and config ("config"). also I extracted all db entities into separate files in specific module
+("model") because add flexibility. point of flexibility lie of the basement why I use config instead constants.
+
+Part 2:  Validation
+    // level data is correct
+    curl -d "@testdata/data_all_ok_2_msp_12.json" -X POST "127.0.0.1:9080"
+
+    // level data is not correct
+    curl -d "@testdata/data_point_value_less_than_min.json" -X POST "127.0.0.1:9080"
+    curl -d "@testdata/data_point_value_greater_than_max.json" -X POST "127.0.0.1:9080"
+
+    curl -d "@testdata/data_not_rectangle.json" -X POST "127.0.0.1:9080"
+
+    curl -d "@testdata/data_too_many_x.json" -X POST "127.0.0.1:9080"
+    curl -d "@testdata/data_too_many_y.json" -X POST "127.0.0.1:9080"
+
+I tried make code to acceptable for test. this point also lie in th basement why I used separate modules where I could.
+
+Part 3:  Minimum Survivable Path
+url:
+    curl -d "@testdata/data_all_ok_2_msp_12.json" -X POST "127.0.0.1:9080/msp"
+    curl -d "@testdata/data_all_ok_2_msp_16.json" -X POST "127.0.0.1:9080/msp"
+
+Minimum Survivable Path is standard question about labyrinth. I tried use simple library to find out answer for this
+question. I only needed add some function to prepare input data to use this library.
+
+method that I used is O(E+V) time complexity. where E is count of edges, and V is count of vertices.
+
+general idea is get input level data, parse data into vertices and using graph theory find all possible ways, and choose
+the way with the lowest length. to calculate cost for concrete vertex we use cost for vertex where we went.
